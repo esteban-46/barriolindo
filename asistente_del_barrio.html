@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Asistente del Barrio</title>
+<style>
+:root{--g:#075e54;--bg:#ece5dd;--me:#dcf8c6;--ln:#0b84b8;--tx:#1f1f1f;--bub:#fff;--card:#f0f0f0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b141a;--me:#005c4b;--ln:#53bdeb;--tx:#e9edef;--bub:#202c33;--card:#2a3942}}
+:root[data-theme="dark"]{--bg:#0b141a;--me:#005c4b;--ln:#53bdeb;--tx:#e9edef;--bub:#202c33;--card:#2a3942}
+html{background:var(--g);scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx)}
+#app{max-width:480px;height:100%;margin:auto;display:flex;flex-direction:column;background:var(--bg)}
+header{background:var(--g);color:#fff;display:flex;align-items:center;gap:12px;padding:10px 14px}
+.av{width:42px;height:42px;border-radius:50%;background:#dcf8c6;color:var(--g);display:grid;place-items:center;font-weight:700}
+header small{display:block;opacity:.8;font-size:12px}
+#chat{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px}
+.m{max-width:82%;padding:7px 10px;border-radius:8px;background:var(--bub);font-size:15px;line-height:1.4;box-shadow:0 1px 1px #0002;align-self:flex-start}
+.me{align-self:flex-end;background:var(--me)}
+.t{display:block;text-align:right;font-size:11px;opacity:.6;margin-top:2px}
+.b{align-self:flex-start;width:72%;max-width:320px;background:var(--bub);color:var(--ln);border:0;border-radius:8px;padding:10px;font:inherit;font-size:15px;cursor:pointer;box-shadow:0 1px 1px #0002}
+.b:disabled{opacity:.5;cursor:default}
+.card{background:var(--card);border-radius:6px;padding:7px 9px;margin:6px 0;font-size:14px}
+a{color:var(--ln)}small{opacity:.7}
+.bar{display:flex;gap:8px;padding:8px;background:var(--bg)}
+.bar input{flex:1;border:0;border-radius:22px;padding:11px 16px;font:inherit;background:var(--bub);color:var(--tx);min-width:0}
+.bar button{width:44px;border:0;border-radius:50%;background:var(--g);color:#fff;font-size:18px}
+</style></head>
+<body><div id="app">
+<header><div class="av">AB</div><div><b>Asistente del Barrio</b><small>TianguisVecino · cuenta de empresa · maqueta ilustrativa</small></div></header>
+<div id="chat"></div>
+<div class="bar"><input id="in" placeholder="Escribe un mensaje" autocomplete="off"><button id="go" aria-label="Enviar">➤</button></div>
+</div>
+<script>
+const $=s=>document.querySelector(s),C=$('#chat');
+const nz=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hm=()=>new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',hour12:false});
+let S,inp=null;
+const reset=()=>{S={order:[],quejas:[],n:122}};reset();
+
+// Datos de muestra (ficticios)
+const T=[
+ {n:'Tianguis Cultural del Chopo',col:'guerrero',d:[6],h:'Sábados (10:00 AM - 5:00 PM)',u:'Aldama y Buenavista',m:'400 m',s:['Música y Vinilos','Ropa y Calzado']},
+ {n:'Tianguis San Fernando',col:'guerrero',d:[0],h:'Domingos (9:00 AM - 3:00 PM)',u:'Plaza San Fernando',m:'850 m',s:['Alimentos']}];
+const P=[
+ {n:'Rock & Vinyl “El Abuelo”',t:0,s:'Música y Vinilos',no:'42',l:'Pasillo central / Carpa roja',e:'Vinilos de colección y discos de Rock'},
+ {n:'Discos La Aguja',t:0,s:'Música y Vinilos',no:'17',l:'Pasillo norte',e:'Cassettes, CDs y tornamesas'},
+ {n:'Ropa Vintage La Chula',t:0,s:'Ropa y Calzado',no:'8',l:'Carpa azul',e:'Chamarras y playeras de segunda mano'},
+ {n:'Tamales Doña Chela',t:1,s:'Alimentos',no:'3',l:'Entrada principal',e:'Tamales y atole'}];
+const B=[{n:'Tacos Doña Mary'},{n:'Frutas y Verduras Lupita'},{n:'Carnitas El Güero'}];
+const Q={'Tacos Doña Mary':[['12 oct','cobro mayor al precio anunciado'],['03 oct','demora en la atención']]};
+
+// Mensajes
+function add(html,cls){const d=document.createElement('div');d.className='m '+cls;d.innerHTML=html+`<span class="t">${hm()}</span>`;C.append(d);C.scrollTop=C.scrollHeight;return d}
+const me=t=>add(esc(t),'me');
+function bot(html,btns=[],ask){
+  inp=null;const ty=add('<i>escribiendo…</i>','');
+  setTimeout(()=>{ty.remove();add(html,'');const g=[];
+    btns.forEach(([l,id,a])=>{const b=document.createElement('button');b.className='b';b.textContent=l;
+      b.onclick=()=>{g.forEach(x=>x.disabled=true);me(l);N[id](a)};g.push(b);C.append(b)});
+    inp=ask||null;C.scrollTop=C.scrollHeight},600)}
+const lista=(a)=>a.map(([k,v])=>`<b>${k}:</b> ${v}`).join('<br>');
+
+const N={
+ menu:()=>bot('¡Quihubo, vecina! Soy tu <b>Asistente del Barrio</b>. Aquí le echamos la mano al comercio de nuestra colonia. ¿Qué andas buscando?',[['1. Vender y surtir','ven'],['2. Comprar en mi barrio','com'],['3. Cuidemos el barrio','bar']]),
+ no:()=>bot('No te entendí. Toca una opción o escribe «menú».',[['Menú','menu']]),
+
+ // Rama 1: vender y surtir
+ ven:()=>bot('¡Qué bueno verte por aquí, casera! ¿Qué quieres hacer hoy?',[['Activar mi puesto','reg'],['Surtirme en la Central','sur'],['Cobros y facturas','cob']]),
+ cob:()=>bot('Cobros con QR y facturas para tu puesto vienen pronto; esta maqueta aún no los incluye.',[['Volver al menú','menu']]),
+ reg:()=>bot('¡Va! Vamos a darte de alta, no tardas ni 3 minutos. ¿Cómo se llama tu negocio?',[],'reg2'),
+ reg2:t=>bot(`¡Listo, así quedó tu puesto!<div class="card"><b>${esc(t)}</b><br>Vende: jitomate, cebolla, chile, limón, aguacate<br>Dónde: Mercado de Jamaica, V. Carranza<br>Horario: martes a domingo, 7:00 a 16:00<br>Pagos: efectivo y transferencia / QR<br>Oferta: limón, 3 kilos por $50</div>¿Todo bien?`,[['Todo correcto','regok'],['Corregir algo','reg']]),
+ regok:()=>bot('¡Va que va! Tu puesto quedó activo en el barrio. Cuando quieras, te surtes en la Central.',[['Surtirme en la Central','sur'],['Menú','menu']]),
+ sur:()=>bot('¡A surtir se ha dicho! La Central manda el pedido junto con los de tus vecinos, y entre más pedimos juntos, más barato sale. ¿Qué insumos necesitas esta semana?',[['Verduras y frutas','cat','v'],['Alimento de origen animal','cat','Alimento de origen animal'],['Abarrotes','cat','Abarrotes'],['Ropa y calzado','cat','Ropa y calzado'],['Ver mi orden actual','ord']]),
+ cat:a=>a==='v'?bot('Va con verduras y frutas. ¿Cuál te hace falta?',[['Jitomate','prod','Jitomate'],['Cebolla','prod','Cebolla'],['Limón','prod','Limón'],['Otro','otro']]):bot(`Va con ${a.toLowerCase()}. ¿Qué producto necesitas?`,[],'prod'),
+ otro:()=>bot('¿Qué producto necesitas?',[],'prod'),
+ prod:p=>{S.p=p;bot(`¿Cuántas cajas o bultos de ${esc(p.toLowerCase())} necesitas?`,[],'qty')},
+ qty:q=>{q=/^\d+$/.test(q)?q+' cajas':q;S.order.push([S.p,q]);
+  bot(`¡Anotado! Sumamos ${esc(q)} de ${esc(S.p.toLowerCase())} a la Orden Masiva del Barrio. Con el pedido consolidado obtendrás entre 5% y 25% de descuento. Te notificaremos el día de entrega.`,[['Agregar otro producto','sur'],['Ver mi orden','ord'],['Terminar','fin']])},
+ ord:()=>bot(S.order.length?'Tu orden actual:<div class="card">'+S.order.map(o=>esc(o[1])+' de '+esc(o[0].toLowerCase())).join('<br>')+'</div>':'Tu orden está vacía.',[['Agregar producto','sur'],['Menú','menu']]),
+ fin:()=>bot('¡Gracias, casera! Tu pedido queda en la Orden Masiva. Aquí estaré cuando me necesites.',[['Menú','menu']]),
+
+ // Rama 2: comprar en mi barrio (tianguis)
+ com:()=>bot('Te ayudo a encontrar tianguis y comercios cerca de ti, y a hablar directo con quien te vende. ¿Qué estás buscando hoy?',[['Tianguis de hoy','hoy'],['Buscar por colonia','col'],['Locales con pago QR','qr']]),
+ hoy:()=>{const L=T.map((x,i)=>[x,i]).filter(([x])=>x.d.includes(new Date().getDay()));
+  bot(L.length?'Estos tianguis abren hoy:':'Hoy no abre ninguno en la maqueta. Estos son los tianguis disponibles:',(L.length?L:T.map((x,i)=>[x,i])).map(([x,i])=>[x.n+' · '+x.m,'tia',i]))},
+ col:()=>bot('Escribe el nombre de tu colonia (ejemplo: Guerrero)',[],'col2'),
+ col2:t=>{const L=T.map((x,i)=>[x,i]).filter(([x])=>nz(t).includes(x.col));
+  L.length?bot(`Encontré estos tianguis cerca de Col. ${esc(t.toUpperCase())}:`,L.map(([x,i])=>[x.n+' · '+x.m,'tia',i])):bot('No encontré tianguis en esa colonia. Prueba con «Guerrero».',[],'col2')},
+ tia:i=>{const x=T[i];bot(`<b>${x.n}</b><br>Días: ${x.h}<br>Ubicación: ${x.u}<br>Pagos: Efectivo, CoDi y Transferencia<br>Elige una sección:`,x.s.map(s=>[s,'sec',i+'|'+s]))},
+ sec:a=>{const[i,s]=a.split('|');bot(`${s} - elige un puesto:`,P.map((p,k)=>[p,k]).filter(([p])=>p.t==i&&p.s===s).map(([p,k])=>[p.n,'pue',k]))},
+ pue:k=>{const p=P[k];bot(`<b>${p.n}</b><br>Puesto #${p.no} (${p.l})<br>${p.e}<br>Pagos: Efectivo, CoDi y Transferencia<br>¿Qué deseas hacer?`,[['Contactar','cont',k],['Pagar / QR','pag',k],['Menú','menu']])},
+ cont:k=>bot(`Toca el enlace para chatear directo con el vendedor:<br><a href="https://wa.me/525500000000?text=${encodeURIComponent('Hola, vi tu puesto “'+P[k].n+'” en TianguisVecino')}" target="_blank" rel="noopener">wa.me/525500000000</a><br><small>Número de muestra.</small>`,[['Pagar / QR','pag',k],['Menú','menu']]),
+ pag:k=>bot(`<b>Pago digital</b> - ${P[k].n}<br>Transfiere a la CLABE:<div class="card">012180000000000000</div>Con esta compra sumas 1 sello a tu Pasaporte Vecinal.<br><small>CLABE de muestra. El bot no confirma el pago: el vendedor debe avisar.</small>`,[['Menú','menu']]),
+ qr:()=>bot('Locales que aceptan pago QR / CoDi:',P.map((p,k)=>[p.n,'pue',k])),
+
+ // Rama 3: Cuidemos el barrio
+ bar:()=>bot('Aquí nos cuidamos entre vecinos. ¿Qué necesitas?',[['Grupos de mi colonia','gru'],['Cómo denunciar','den'],['Seguridad de mis datos','dat'],['Quejas al comerciante','que']]),
+ gru:()=>bot('Existen grupos de comerciantes por colonia para avisarse y apoyarse entre vecinos. ¿En qué colonia está tu negocio?',[],'gru2'),
+ gru2:t=>{S.col=t;bot(`Encontré el grupo de comerciantes de ${esc(t)}. Antes de unirte, ten presente que los demás integrantes podrán ver tu número de teléfono.`,[['Unirme','uni'],['Ahora no','ahno']])},
+ uni:()=>bot(`¡Bienvenido al grupo de comerciantes de ${esc(S.col)}! Si quieres salir, escribe «borrar mis datos».`,[['Volver al menú','menu']]),
+ ahno:()=>bot('Sin problema, aquí seguimos cuando quieras.',[['Volver al menú','menu']]),
+ den:()=>bot('Si te están pidiendo cobros o te han amenazado, es una situación grave y no tienes que enfrentarla solo. Estas son las vías para denunciar:<div class="card">'+lista([['Peligro inmediato','911'],['Denuncia anónima','089'],['Página del C5','[enlace oficial verificado]'],['Guía para denunciar','[enlace]']])+'</div>Si hay peligro en este momento, llama al 911. Este asistente no sustituye una denuncia formal.',[['Ver guía','guia'],['Volver al menú','menu']]),
+ guia:()=>bot('La guía para denunciar se publicará aquí. Los enlaces de esta maqueta son de muestra.',[['Cuidemos el barrio','bar']]),
+ dat:()=>bot('Tu información se trata con cuidado. Solo guardamos el nombre de tu local, lo que vendes, su ubicación y tu horario de disponibilidad. No los vendemos ni los compartimos con terceros. Puedes pedir que los corrijamos o eliminemos escribiendo «borrar mis datos».',[['Aviso de privacidad completo','priv']]),
+ priv:()=>bot('El aviso de privacidad completo se publicará aquí (enlace de muestra).',[['Menú','menu']]),
+ borrar:()=>{reset();bot('Listo: borré tus datos de grupos, pedidos y quejas de esta conversación. Cuando quieras, empezamos de nuevo.',[['Menú','menu']])},
+ resp:()=>bot('Derecho de réplica: si eres el comerciante, escribe a replicas@ejemplo.mx (correo de muestra) con el folio de la queja y tu versión. Hoy la verificación es manual.',[['Menú','menu']]),
+
+ // Quejas
+ que:()=>bot('Aquí puedes reportar problemas con el servicio de un comerciante, como cobros indebidos o mal trato. Si lo que vives es extorsión, la información para denunciar está en <b>Cómo denunciar</b>.',[['Levantar una queja','lev'],['Consultar quejas de un puesto','cons'],['Cómo denunciar','den']]),
+ lev:()=>{S.m='lev';bot('Gracias por avisar. Te pediré algunos datos. ¿En qué colonia está el puesto?',[],'qc')},
+ cons:()=>{S.m='con';bot('¿En qué colonia está el puesto?',[],'qc')},
+ qc:t=>{S.qc=t;bot('¿Cómo se llama el puesto o negocio?',[],'qn')},
+ qn:t=>{const L=nz(S.qc)==='jamaica'?B.filter(b=>nz(b.n).includes(nz(t))):[];
+  L.length?bot(`Encontré estos en ${esc(S.qc)}. ¿Cuál es?`,[...L.map(b=>[b.n,'qp',b.n]),['Ninguno','ning']]):bot('No encontré ese puesto en esa colonia (en la maqueta solo existe Jamaica). Prueba con otro nombre, por ejemplo «Mary».',[],'qn')},
+ ning:()=>bot('Sin problema. Escribe otro nombre para buscar de nuevo.',[],'qn'),
+ qp:n=>{S.q={n,c:S.qc};S.m==='lev'?bot('Cuéntame brevemente qué ocurrió. Describe solo los hechos, sin insultos ni datos personales de otras personas.',[],'hec'):N.mostrar(n)},
+ hec:t=>{S.q.h=t;bot('¿Quieres adjuntar una foto como evidencia? Es opcional. Procura que no aparezcan personas.',[['Adjuntar foto','foto'],['Omitir','omit']])},
+ foto:()=>{S.q.f=1;me('Foto adjunta (1)');N.rev()},
+ omit:()=>{S.q.f=0;N.rev()},
+ rev:()=>{const q=S.q;bot(`Revisa tu queja. ¿Es correcta?<div class="card">${lista([['Puesto',esc(q.n)],['Colonia',esc(q.c)],['Queja',esc(q.h)],['Foto',q.f?'1 adjunta':'sin foto']])}</div>`,[['Enviar','env'],['Corregir','corr']])},
+ corr:()=>bot('Va, cuéntame de nuevo qué ocurrió (solo hechos).',[],'hec'),
+ env:()=>{S.n++;S.quejas.push({...S.q,st:'pendiente'});
+  bot(`Tu queja quedó registrada con el folio <b>#${String(S.n).padStart(4,'0')}</b>. Será revisada antes de mostrarse a otros usuarios.<br><small>Ciclo: pendiente → revisión por moderador → publicada (o rechazada).</small>`,[['Menú','menu']])},
+ mostrar:n=>{const L=Q[n]||[];
+  bot(L.length?`${esc(n)} (${esc(S.qc)}) tiene ${L.length} quejas publicadas:<div class="card">${L.map(([d,t])=>`<b>${d}:</b> ${t}`).join('<br>')}</div>Son opiniones de usuarios y no están verificadas. Si eres el comerciante y quieres responder, escribe «responder».`:`${esc(n)} no tiene quejas publicadas.`,[['Ver más','mas'],['Nueva consulta','cons'],['Menú','menu']])},
+ mas:()=>bot('No hay más quejas publicadas para este puesto.',[['Nueva consulta','cons'],['Menú','menu']])
+};
+
+// Texto libre
+function send(){const t=$('#in').value.trim();if(!t)return;$('#in').value='';me(t);const k=nz(t);
+ if(k==='borrar mis datos')return N.borrar();
+ if(['hola','menu','inicio','tianguis'].includes(k))return N.menu();
+ if(k==='responder')return N.resp();
+ if(inp)return N[inp](t);
+ const r={1:'ven',2:'com',3:'bar'}[k];r?N[r]():N.no()}
+$('#go').onclick=send;$('#in').onkeydown=e=>{if(e.key==='Enter')send()};
+N.menu();
+</script></body></html>
