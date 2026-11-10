@@ -1,0 +1,38 @@
+/* Colores */
+:root {
+  --verde: #075e54;
+  --fondo: #ece5dd;
+  --yo: #dcf8c6;
+  --link: #0b84b8;
+}
+
+/* Base */
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; font-family: system-ui, sans-serif; color: #1f1f1f; }
+
+/* Pantalla de celular */
+#app { max-width: 480px; height: 100%; margin: auto; display: flex; flex-direction: column; background: var(--fondo); }
+
+/* Encabezado */
+header { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--verde); color: #fff; }
+.av { width: 42px; height: 42px; border-radius: 50%; background: var(--yo); color: var(--verde); display: grid; place-items: center; font-weight: bold; }
+header small { display: block; font-size: 12px; opacity: .8; }
+
+/* Chat */
+#chat { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+
+/* Burbujas */
+.m { max-width: 82%; padding: 7px 10px; border-radius: 8px; background: #fff; font-size: 15px; line-height: 1.4; align-self: flex-start; }
+.me { background: var(--yo); align-self: flex-end; }
+.t { display: block; text-align: right; font-size: 11px; opacity: .6; }
+.card { background: #f0f0f0; border-radius: 6px; padding: 7px 9px; margin: 6px 0; font-size: 14px; }
+a { color: var(--link); }
+
+/* Botones del bot */
+.b { width: 72%; max-width: 320px; padding: 10px; border: 0; border-radius: 8px; background: #fff; color: var(--link); font: inherit; align-self: flex-start; cursor: pointer; }
+.b:disabled { opacity: .5; cursor: default; }
+
+/* Barra para escribir */
+#form { display: flex; gap: 8px; padding: 8px; }
+#in { flex: 1; min-width: 0; padding: 11px 16px; border: 0; border-radius: 22px; font: inherit; }
+#form button { width: 44px; border: 0; border-radius: 50%; background: var(--verde); color: #fff; font-size: 18px; }
