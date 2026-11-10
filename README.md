@@ -1,0 +1,2 @@
+Esta fue la solución al hackathon de Chilangaton CDMX, una web interactiva, tipo chat de whatsapp, con un chatbot simple que permite interactuar entre comerciantes y entre consumidores, además de facilitar el acceso a los locales, conociendo información fundamental sobre los comercios cerca de la zona del usuario.
+Ya que el tiempo fue muy imitado, se requirió del uso de IA, el desarrollo fue con HTML, CSS y Javascript
